@@ -102,18 +102,22 @@ class myDataset():
 
 	def getTrMiniBatch(self):
 		idx = list(range(self.trX.shape[0]))
-		minibatch = idx[:self.batchSize]
-		return trX[minibatch, :], trY[minibatch, :]
+		np.random.shuffle(idx)
+		minibatch = np.array(idx[:self.batchSize])
+		#print(minibatch)
+		return self.trX[minibatch, :].T
 
 	def getValMiniBatch(self):
 		idx = list(range(self.valX.shape[0]))
+		np.random.shuffle(idx)
 		minibatch = idx[:self.batchSize]
-		return valX[minibatch, :], valY[minibatch, :]
+		return self.valX[minibatch, :].T
 
 	def getTsMiniBatch(self):
 		idx = list(range(self.tsX.shape[0]))
+		np.random.shuffle(idx)
 		minibatch = idx[:self.batchSize]
-		return tsX[minibatch, :], tsY[minibatch, :]
+		return self.tsX[minibatch, :].T
 
 
 

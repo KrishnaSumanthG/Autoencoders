@@ -5,10 +5,12 @@ import matplotlib.pyplot as plt
 import pdb
 import argparse
 
-def train(X, X_val, net_dims, epochs=2000, learningRate=0.1,costEstimate="MSE"):
-
+def train(X, X_val, net_dims, epochs=2000, learningRate=0.1,costEstimate="MSE", decayRate = 0.5):
+    learningRate=float(args.learningRate)
+    decayRate = float(args.decayRate)
     batchSize=int(args.batchSize)
     n_in, n_h, n_fin = net_dims
+    data=myDataset(args)
     model=Model()
     noise = Noise()
     parameters = model.initialize_2layer_weights(n_in, n_h, n_fin)
@@ -18,10 +20,12 @@ def train(X, X_val, net_dims, epochs=2000, learningRate=0.1,costEstimate="MSE"):
     
     for ii in range(epochs):
         noBatches = int(X.shape[0]/batchSize)
+        learningRate = learningRate*(1/(1+decayRate*ii))
         for jj in range(noBatches):
 
-            XTrBatch, _ = myDataset.getTrMiniBatch()
+            XTrBatch= data.getTrMiniBatch()
             noisyXTrBatch = noise.GaussianNoise(XTrBatch, sd=0.3)
+            #print(noisyXTrBatch.shape)
 
             
             W1,b1 = parameters["W1"],parameters["b1"]
@@ -32,10 +36,10 @@ def train(X, X_val, net_dims, epochs=2000, learningRate=0.1,costEstimate="MSE"):
 
             if costEstimate == "MSE":
                 cost = model.MSE(A2, XTrBatch)
-                dA= (A2-XTrBatch)/XTrBatch.shape[0]
+                dA= (A2-XTrBatch)/(XTrBatch.shape[1])
             else:
                 cost = model.crossEntropy(A2, XTrBatch)
-                dA= ((A2 - X)/ (A2*(1.0 - A2)))/XTrBatch.shape[0]
+                dA= ((A2 - X)/ (A2*(1.0 - A2)))/XTrBatch.shape[1]
 
             dA_prev2, dW2, db2 = model.layer_backward(dA, cache2, W2, b2, "sigmoid")
             dA_prev1, dW1, db1 = model.layer_backward(dA_prev2, cache1, W1, b1, "relu")
@@ -47,7 +51,7 @@ def train(X, X_val, net_dims, epochs=2000, learningRate=0.1,costEstimate="MSE"):
 
 
             if jj % 100 == 0:
-                XValBatch , _ = myDataset.getValMiniBatch()
+                XValBatch = data.getValMiniBatch()
                 noisyXValBatch = noise.GaussianNoise(XValBatch, sd=0.3)
                 costs.append(cost)
                 A1_,cache1_= model.layer_forward(noisyXValBatch, W1, b1, "relu")
@@ -68,7 +72,7 @@ def main(args):
     data = myDataset(args)
     train_data, val_data, test_data = data.getTrData(), data.getValData(), data.getTsData()
 
-    m, n_in = train_data.shape
+    m,n_in = train_data.shape
     n_fin = n_in
     n_h = 1000
     net_dims = [n_in, n_h, n_fin]
@@ -81,7 +85,7 @@ def main(args):
     net_dims = [n_in, n_h, n_fin]
 
     costs,costs_, parameters = train(train_data, val_data, net_dims, \
-        epochs=epochs, learningRate=args.learningRate)
+        epochs=epochs, learningRate=args.learningRate, decayRate = args.decayRate)
     plot_costs.append(costs)
     plot_costs_.append(costs_)
     
@@ -122,8 +126,6 @@ if __name__ == "__main__":
                         help="batch size")
     parser.add_argument('--learningRate', default='0.0001',
                         help="initial learning rate")
-    # parser.add_argument('--cost', default='MSE',
-    #                     help="MSE or crossEntropy")
     parser.add_argument('--labelRange', default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
                         help="all the labels in the output")
     parser.add_argument('--noTrPerClass', default='6000',
@@ -136,6 +138,8 @@ if __name__ == "__main__":
                         help="number of epochs")
     parser.add_argument('--costEstimate', default='MSE',
                         help="Loss function")
+    parser.add_argument('--decayRate', default='0.5',
+                        help="decay rate for learning rate")
 
     args = parser.parse_args()
 

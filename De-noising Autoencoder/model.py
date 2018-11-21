@@ -27,7 +27,7 @@ class Model():
             A is activation. numpy.ndarray (n, m)
             cache is a dictionary with {"Z", Z}
         '''
-        A = np.tanh(Z)
+        A = self.np.tanh(Z)
         cache = {}
         cache["Z"] = Z
         return A, cache
@@ -46,7 +46,7 @@ class Model():
         '''
         ### CODE HERE
         Z = cache["Z"]
-        dZ = dA * (1-np.tanh(Z)**2)
+        dZ = dA * (1-self.np.tanh(Z)**2)
         return dZ
 
     def sigmoid(self,Z):
@@ -80,7 +80,7 @@ class Model():
         ### CODE HERE
 
         Z = cache["Z"]
-        A_, cache_= sigmoid(Z)
+        A_, cache_= self.sigmoid(Z)
         dZ= dA * A_ *(1-A_)
 
         return dZ
@@ -156,12 +156,13 @@ class Model():
             cache - a dictionary containing the cache from the linear and the nonlinear propagation
             to be used for derivative
         '''
-        Z, lin_cache = linear_forward(A_prev, W, b)
+        Z, lin_cache = self.linear_forward(A_prev, W, b)
         if activation == "sigmoid":
-            A, act_cache = sigmoid(Z)
+            A, act_cache = self.sigmoid(Z)
         elif activation == "tanh":
-            A, act_cache = tanh(Z)
-        
+            A, act_cache = self.tanh(Z)
+        elif activation == "relu":
+            A, act_cache = self.relu(Z)
         cache = {}
         cache["lin_cache"] = lin_cache
         cache["act_cache"] = act_cache
@@ -170,7 +171,7 @@ class Model():
 
     def crossEntropy(self,A2,X):
 
-        obs = X.shape[0]
+        obs = X.shape[1]
         pred = A2
 
         cost= -X*np.log(pred) - (1-X)*np.log(1-pred)
@@ -180,7 +181,7 @@ class Model():
 
     def MSE(self,A2,X):
 
-        obs = X.shape[0]
+        obs = X.shape[1]
 
         cost= (1/2)*(A2-X)*(A2-X)
         cost= cost.sum()/obs
@@ -230,10 +231,12 @@ class Model():
         act_cache = cache["act_cache"]
 
         if activation == "sigmoid":
-            dZ = sigmoid_der(dA, act_cache)
+            dZ = self.sigmoid_der(dA, act_cache)
         elif activation == "tanh":
-            dZ = tanh_der(dA, act_cache)
-        dA_prev, dW, db = linear_backward(dZ, lin_cache, W, b)
+            dZ = self.tanh_der(dA, act_cache)
+        elif activation == "relu":
+            dZ = self.relu_der(dA, act_cache)
+        dA_prev, dW, db = self.linear_backward(dZ, lin_cache, W, b)
         return dA_prev, dW, db
 
     # def accuracy(predicted_labels, actual_labels):
@@ -259,10 +262,10 @@ class Noise():
         
     def GaussianNoise(self, X, sd=0.5):
         # Injecting small gaussian noise
-        X += numpy.random.normal(0, sd, X.shape)
+        X += np.random.normal(0, sd, X.shape)
         return X
         
     def MaskingNoise(self, X, rate=0.5):
-        mask = (numpy.random.uniform(0,1, X.shape)<rate).astype("i4")
+        mask = (np.random.uniform(0,1, X.shape)<rate).astype("i4")
         X = mask*X
         return X
