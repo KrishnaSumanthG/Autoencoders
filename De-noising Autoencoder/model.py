@@ -72,6 +72,41 @@ def sigmoid_der(dA, cache):
 
     return dZ
 
+def relu(Z):
+    '''
+    computes relu activation of Z
+
+    Inputs: 
+        Z is a numpy.ndarray (n, m)
+
+    Returns: 
+        A is activation. numpy.ndarray (n, m)
+        cache is a dictionary with {"Z", Z}
+    '''
+
+    A = np.maximum(0,Z)
+    cache = {}
+    cache["Z"] = Z
+    return A, cache
+
+def relu_der(dA, cache):
+    '''
+    computes derivative of relu activation
+
+    Inputs: 
+        dA is the derivative from subsequent layer. numpy.ndarray (n, m)
+        cache is a dictionary with {"Z", Z}, where Z was the input 
+        to the activation layer during forward propagation
+
+    Returns: 
+        dZ is the derivative. numpy.ndarray (n,m)
+    '''
+    dZ = np.array(dA, copy=True)
+    Z = cache["Z"]
+    dZ[Z<0] = 0
+    return dZ
+
+
 def initialize_2layer_weights(n_in, n_h, n_fin):
     '''
     Initializes the weights of the 2 layer network
