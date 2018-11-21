@@ -6,68 +6,74 @@ import argparse
 
 class myDataset():
 	def __init__(self, args):
-		self.datapath = args.dataPath	
-		self.noTraining = args.noTraining
-		self.noValidation = args.noValidation
-		self.noTesting = args.noTesting
+		self.dataPath = args.dataPath	
+		self.noTraining = int(args.noTraining)
+		self.noValidation = int(args.noValidation)
+		self.noTesting = int(args.noTesting)
 		self.labelRange = args.labelRange
-		self.noTrPerClass = args.noTrPerClass
-		self.noValPerClass = args.noValPerClass
-		self.noTsPerClass = args.noTsPerClass
-		self.batchSize = args.batchSize
+		self.noTrPerClass = int(args.noTrPerClass)
+		self.noValPerClass = int(args.noValPerClass)
+		self.noTsPerClass = int(args.noTsPerClass)
+		self.batchSize = int(args.batchSize)
+		self.learningRate = float(args.learningRate)
 
 
 		fd = open(os.path.join(self.dataPath, 'train-images-idx3-ubyte'))
 		loaded = np.fromfile(file=fd, dtype=np.uint8)
-		print(loaded[:16])
-		self.trData = loaded[16:].reshape((60000, 28*28)).astype(int)
+		self.trData = loaded[16:].reshape((60000, 28*28)).astype(float)
 
 		fd = open(os.path.join(self.dataPath, 'train-labels-idx1-ubyte'))
 		loaded = np.fromfile(file=fd, dtype=np.uint8)
-		self.trLabels = loaded[8:].reshape((60000)).astype(float)
+		self.trLabels = loaded[8:].reshape((60000))
 
 		fd = open(os.path.join(self.dataPath, 't10k-images-idx3-ubyte'))
 		loaded = np.fromfile(file=fd, dtype=np.uint8)
-		self.tsData = loaded[16:].reshape((10000, 28*28)).astype(int)
+		self.tsData = loaded[16:].reshape((10000, 28*28)).astype(float)
 
 		fd = open(os.path.join(self.dataPath, 't10k-labels-idx1-ubyte'))
 		loaded = np.fromfile(file=fd, dtype=np.uint8)
-		self.tsLabels = loaded[8:].reshape((10000)).astype(float)
+		self.tsLabels = loaded[8:].reshape((10000))
 
 		self.trData = self.trData/255.
 		self.tsData = self.tsData/255.		
 
-	    self.tsX = np.zeros((self.noTesting, 28*28))
-    	self.trX = np.zeros((self.noTraining - self.noValidation, 28*28))
-    	self.valX= np.zeros((noValSamples, 28*28))
-    	self.tsY = np.zeros(self.noTesting)
-    	self.trY = np.zeros(self.noTraining - self.noValidation)
-    	self.valY = np.zeros(self.noValidation)
+		self.tsX = np.zeros((self.noTesting, 28*28))
+		self.trX = np.zeros((self.noTraining - self.noValidation, 28*28))
+		self.valX= np.zeros((self.noValidation, 28*28))
+		self.tsY = np.zeros(self.noTesting)
+		self.trY = np.zeros(self.noTraining - self.noValidation)
+		self.valY = np.zeros(self.noValidation)
 
 
 		count = 0
 
-		for ll in labelRange:
+		# print(self.labelRange)
+		# print(self.trLabels[:10])
 
-		    idl = np.where(self.trLabels == ll)
+		for ll in self.labelRange:
+			# print(ll)
+			idl = np.where(self.trLabels == ll)
 		    
-		    idl1 = idl[0][: (self.noTrPerClass-self.noValPerClass)]
-		    idl2 = idl[0][(self.noTrPerClass-self.noValPerClass):self.noTrPerClass]
+			idl1 = idl[0][: (self.noTrPerClass-self.noValPerClass)]
+			idl2 = idl[0][(self.noTrPerClass-self.noValPerClass):self.noTrPerClass]
 		    
-		    idx1 = list(range(count*(self.noTrPerClass-self.noValPerClass), (count+1)*(self.noTrPerClass-self.noValPerClass)))
-		    idx2 = list(range(count*(self.noValPerClass), (count+1)*self.noValPerClass))
+			idx1 = list(range(count*(self.noTrPerClass-self.noValPerClass), (count+1)*(self.noTrPerClass-self.noValPerClass)))
+			idx2 = list(range(count*(self.noValPerClass), (count+1)*self.noValPerClass))
 		    
-		    self.trX[idx1, :] = self.trData[idl1, :]
-		    self.trY[idx1] = self.trLabels[idl1]
+
+			# print(len(idx1))
+			# print(len(idl1))
+
+			self.trX[idx1, :] = self.trData[idl1, :]
+			self.trY[idx1] = self.trLabels[idl1]
 		    
 		    # Val data
 
-		    self.valX[idx2, :] = self.trData[idl2, :]
-		    self.valY[idx2] = self.trLabels[idl2]
+			self.valX[idx2, :] = self.trData[idl2, :]
+			self.valY[idx2] = self.trLabels[idl2]
 
 		    # Test data
-
-		    idl = np.where(self.tsLabels == ll)
+			idl = np.where(self.tsLabels == ll)
 			idl = idl[0][: self.noTsPerClass]
 			idx = list(range(count*self.noTsPerClass, (count+1)*self.noTsPerClass))
 			self.tsX[idx, :] = self.tsData[idl, :]
@@ -75,7 +81,7 @@ class myDataset():
 			count += 1
 
 		# np.random.seed(1)
-		test_idx = np.random.permutation(tsX.shape[0])
+		test_idx = np.random.permutation(self.tsX.shape[0])
 		self.tsX = self.tsX[test_idx,:]
 		self.tsY = self.tsY[test_idx]
 
@@ -85,6 +91,14 @@ class myDataset():
 
 
 
+	def getTrData(self):
+		return self.trX
+
+	def getValData(self):
+		return self.valX
+
+	def getTsData(self):
+		return self.tsX
 
 	def getTrMiniBatch(self):
 		idx = list(range(self.trX.shape[0]))

@@ -1,12 +1,12 @@
 import numpy as np
-from load_mnist import mnist
 import matplotlib.pyplot as plt
 import pdb
 
 
 class Model():
 
-    def initialize_2layer_weights(n_in, n_h, n_fin):
+
+    def initialize_2layer_weights(self,n_in, n_h, n_fin):
 
         parameters = {}
         parameters["W1"] = (np.random.randn(n_in,n_h)*(np.sqrt(2.0/(n_in*n_h)))).T
@@ -16,7 +16,7 @@ class Model():
 
         return parameters
 
-    def tanh(Z):
+    def tanh(self,Z):
         '''
         computes tanh activation of Z
 
@@ -32,7 +32,7 @@ class Model():
         cache["Z"] = Z
         return A, cache
 
-    def tanh_der(dA, cache):
+    def tanh_der(self,dA, cache):
         '''
         computes derivative of tanh activation
 
@@ -49,7 +49,7 @@ class Model():
         dZ = dA * (1-np.tanh(Z)**2)
         return dZ
 
-    def sigmoid(Z):
+    def sigmoid(self,Z):
         '''
         computes sigmoid activation of Z
 
@@ -65,7 +65,7 @@ class Model():
         cache["Z"] = Z
         return A, cache
 
-    def sigmoid_der(dA, cache):
+    def sigmoid_der(self,dA, cache):
         '''
         computes derivative of sigmoid activation
 
@@ -85,7 +85,7 @@ class Model():
 
         return dZ
 
-    def relu(Z):
+    def relu(self,Z):
         '''
         computes relu activation of Z
 
@@ -102,7 +102,7 @@ class Model():
         cache["Z"] = Z
         return A, cache
 
-    def relu_der(dA, cache):
+    def relu_der(self,dA, cache):
         '''
         computes derivative of relu activation
 
@@ -119,7 +119,7 @@ class Model():
         dZ[Z<0] = 0
         return dZ
 
-    def linear_forward(A, W, b):
+    def linear_forward(self,A, W, b):
         '''
         Input A propagates through the layer 
         Z = WA + b is the output of this layer. 
@@ -140,7 +140,7 @@ class Model():
         cache["A"] = A
         return Z, cache
 
-    def layer_forward(A_prev, W, b, activation):
+    def layer_forward(self,A_prev, W, b, activation):
         '''
         Input A_prev propagates through the layer and the activation
 
@@ -168,27 +168,26 @@ class Model():
 
         return A, cache
 
-    def cost_estimate(A2, Y):
-        '''
-        Estimates the cost with prediction A2
+    def crossEntropy(self,A2,X):
 
-        Inputs:
-            A2 - numpy.ndarray (1,m) of activations from the last layer
-            Y - numpy.ndarray (1,m) of labels
-        
-        Returns:
-            cost of the objective function
-        '''
-        ### CODE HERE
-        obs = len(Y.T)
+        obs = X.shape[0]
         pred = A2
 
-        cost= -Y*np.log(pred) - (1-Y)*np.log(1-pred)
+        cost= -X*np.log(pred) - (1-X)*np.log(1-pred)
         cost= cost.sum()/obs
 
         return cost
 
-    def linear_backward(dZ, cache, W, b):
+    def MSE(self,A2,X):
+
+        obs = X.shape[0]
+
+        cost= (1/2)*(A2-X)*(A2-X)
+        cost= cost.sum()/obs
+
+        return cost
+
+    def linear_backward(self,dZ, cache, W, b):
         '''
         Backward propagation through the linear layer
 
@@ -212,7 +211,7 @@ class Model():
         db = np.sum(dZ,axis=1,keepdims= True)
         return dA_prev, dW, db
 
-    def layer_backward(dA, cache, W, b, activation):
+    def layer_backward(self,dA, cache, W, b, activation):
         '''
         Backward propagation through the activation and linear layer
 
@@ -237,6 +236,33 @@ class Model():
         dA_prev, dW, db = linear_backward(dZ, lin_cache, W, b)
         return dA_prev, dW, db
 
-    def accuracy(predicted_labels, actual_labels):
-        diff = predicted_labels - actual_labels
-        return (1.0 - (float(np.count_nonzero(diff)) / len(diff.T)))*100
+    # def accuracy(predicted_labels, actual_labels):
+    #     diff = predicted_labels - actual_labels
+    #     return (1.0 - (float(np.count_nonzero(diff)) / len(diff.T)))*100
+
+    
+class Noise():
+    def SaltAndPepper(self, image, rate=0.3):
+        row,col,ch = image.shape
+        s_vs_p = 0.5
+        amount = 0.004
+        out = np.copy(image)
+          
+        num_salt = np.ceil(amount * image.size * s_vs_p)
+        coords = [np.random.randint(0, i - 1, int(num_salt)) for i in image.shape]
+        out[coords] = 1
+
+        num_pepper = np.ceil(amount* image.size * (1. - s_vs_p))
+        coords = [np.random.randint(0, i - 1, int(num_pepper)) for i in image.shape]
+        out[coords] = 0
+        return out
+        
+    def GaussianNoise(self, X, sd=0.5):
+        # Injecting small gaussian noise
+        X += numpy.random.normal(0, sd, X.shape)
+        return X
+        
+    def MaskingNoise(self, X, rate=0.5):
+        mask = (numpy.random.uniform(0,1, X.shape)<rate).astype("i4")
+        X = mask*X
+        return X
