@@ -7,6 +7,7 @@ import argparse
 
 def train(X, X_val, net_dims, epochs=2000, learningRate=0.1,costEstimate="MSE", decayRate = 0.5):
     learningRate=float(args.learningRate)
+    epochs=int(args.epochs)
     decayRate = float(args.decayRate)
     batchSize=int(args.batchSize)
     n_in, n_h, n_fin = net_dims
@@ -21,12 +22,19 @@ def train(X, X_val, net_dims, epochs=2000, learningRate=0.1,costEstimate="MSE", 
     for ii in range(epochs):
         noBatches = int(X.shape[0]/batchSize)
         learningRate = learningRate*(1/(1+decayRate*ii))
+        print(learningRate)
+        print("Epoch: ",ii )
         for jj in range(noBatches):
 
             XTrBatch= data.getTrMiniBatch()
+            # for i in range(10):
+            #     pixels = XTrBatch[:,i]
+            #     pixels = pixels.reshape((28, 28))
+            #     plt.imshow(pixels, cmap='gray')
+            #     plt.show()
+
             noisyXTrBatch = noise.GaussianNoise(XTrBatch, sd=0.3)
             #print(noisyXTrBatch.shape)
-
             
             W1,b1 = parameters["W1"],parameters["b1"]
             W2,b2 = parameters["W2"],parameters["b2"]
@@ -49,24 +57,72 @@ def train(X, X_val, net_dims, epochs=2000, learningRate=0.1,costEstimate="MSE", 
             parameters['W1']+=-learningRate*dW1
             parameters['b1']+=-learningRate*db1
 
-
-            if jj % 100 == 0:
-                XValBatch = data.getValMiniBatch()
-                noisyXValBatch = noise.GaussianNoise(XValBatch, sd=0.3)
-                costs.append(cost)
-                A1_,cache1_= model.layer_forward(noisyXValBatch, W1, b1, "relu")
-                A2_,cache2_ = model.layer_forward(A1_, W2, b2, "sigmoid")
-                if costEstimate == "MSE":
-                    cost_ = model.MSE(A2_, XValBatch)
-                else:
-                    cost_ = model.crossEntropy(A2_, XValBatch)
-                costs_.append(cost_)
-
-            if jj % 100 == 0:
-                print("Cost at iteration %i is: %f" %(jj, cost))
+            if jj % 50 == 0:
+                print("Cost at iteration %i is: %f" %(jj*50, cost))
         
+        XValBatch = data.getValMiniBatch()
+        noisyXValBatch = noise.GaussianNoise(XValBatch, sd=0.3)
+        costs.append(cost)
+        A1_,cache1_= model.layer_forward(noisyXValBatch, W1, b1, "relu")
+        A2_,cache2_ = model.layer_forward(A1_, W2, b2, "sigmoid")
+        if costEstimate == "MSE":
+            cost_ = model.MSE(A2_, XValBatch)
+        else:
+            cost_ = model.crossEntropy(A2_, XValBatch)
+        costs_.append(cost_)
 
     return costs,costs_, parameters
+
+def predict(parameters):
+    data=myDataset(args)
+    model=Model()
+    noise = Noise()
+    XTsBatch= data.getTsMiniBatch()
+    noisyXTsBatch = noise.GaussianNoise(XTsBatch, sd=0.3)
+    #print(noisyXTrBatch.shape)
+
+    W1,b1 = parameters["W1"],parameters["b1"]
+    W2,b2 = parameters["W2"],parameters["b2"]
+
+    A1,cache1= model.layer_forward(noisyXTsBatch, W1, b1, "relu")
+    A2,cache2 = model.layer_forward(A1, W2, b2, "sigmoid")
+    # for i in range(10):
+    #     pixels1 = A2[:,i]
+    #     pixels1 = pixels1.reshape((28, 28))
+    #     #plt.imshow(pixels1, cmap='gray')
+    #     pixels2 = XTsBatch[:,i]
+    #     pixels2 = pixels2.reshape((28, 28))
+    #     plt.imshow(pixels1,pixels2, cmap='gray')
+    #     plt.show()
+
+    fig1=plt.figure(figsize=(8, 8))
+    columns = 4
+    rows = 4
+    for i in range(1, columns*rows +1):
+        pixels1 = A2[:,i]
+        img = pixels1.reshape((28, 28))
+        fig1.add_subplot(rows, columns, i)
+        plt.imshow(img)
+    
+    fig2=plt.figure(figsize=(8, 8))
+    columns = 4
+    rows = 4
+    for i in range(1, columns*rows +1):
+        pixels2 = XTsBatch[:,i]
+        img = pixels2.reshape((28, 28))
+        fig2.add_subplot(rows, columns, i)
+        plt.imshow(img)
+
+    fig3=plt.figure(figsize=(8, 8))
+    columns = 4
+    rows = 4
+    for i in range(1, columns*rows +1):
+        pixels3 = noisyXTsBatch[:,i]
+        img = pixels3.reshape((28, 28))
+        fig3.add_subplot(rows, columns, i)
+        plt.imshow(img)
+    plt.show()
+
 
 def main(args):
     data = myDataset(args)
@@ -78,7 +134,7 @@ def main(args):
     net_dims = [n_in, n_h, n_fin]
 
     args.learningRate = args.learningRate
-    epochs = args.epochs
+    epochs = int(args.epochs)
     plot_costs=[]
     plot_costs_=[]
     test_acc=[]
@@ -89,21 +145,9 @@ def main(args):
     plot_costs.append(costs)
     plot_costs_.append(costs_)
     
-
-    # compute the accuracy for training set and testing set
-    # train_Pred = classify(train_data, parameters)
-    # test_Pred = classify(test_data, parameters)
-
-    # trAcc = accuracy(train_Pred, train_label)
-    # teAcc = accuracy(test_Pred, test_label)
-    # test_acc.append(teAcc)
-    # print("Accuracy for training set is {0:0.3f} %".format(trAcc))
-    # print("Validation cost is{0:0.3f} ".format(costs_[-1]))
-    # print("Accuracy for testing set is {0:0.3f} %".format(teAcc))
+    predict(parameters)
     
-    # CODE HERE TO PLOT costs vs iterations
-    
-    it =  list(range(0,num_iterations,10))
+    it =  list(range(0,epochs))
     plt.plot(it, costs, label='train')
     plt.plot(it, costs_, label='val')
     plt.title('Train_cost and Val_cost vs iterations')

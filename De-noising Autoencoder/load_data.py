@@ -47,9 +47,6 @@ class myDataset():
 
 		count = 0
 
-		# print(self.labelRange)
-		# print(self.trLabels[:10])
-
 		for ll in self.labelRange:
 			# print(ll)
 			idl = np.where(self.trLabels == ll)
