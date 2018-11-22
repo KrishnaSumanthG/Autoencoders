@@ -6,21 +6,21 @@ import pdb
 class Model():
 
     def softmax_cross_entropy_loss(self, Z, Y=np.array([])):
-    cache = {}
-    temp = np.exp(Z - np.max(Z, axis=0,  keepdims=True))
-    A = temp/np.sum(temp, axis=0, keepdims=True)  
-    noSamples = Z.shape[1]
-    loss = (-np.sum(np.log(A[Y.astype('int'), np.arange(noSamples)])))/noSamples
-    cache['A'] = A
-    
-    return A, cache, loss
+        cache={} 
+        n,m = Y.shape
+        mask = range(m)
+        A = np.exp(Z-np.max(Z))/(np.sum(np.exp(Z-np.max(Z)),axis=0)).reshape(1,m)  ## total is n,m
+        cache["A"]=A
+        loss = -np.log(A[Y.astype(int),mask])
+        loss= np.sum(loss)/m 
+        return A, cache, loss
 
     def softmax_cross_entropy_loss_der(self, Y, cache):
-        noSamples = Y.shape[1]
-        dZ = cache['A']
-        dZ[Y.astype('int'), np.arange(noSamples)] -= 1
-        dZ /= noSamples
-
+        n,m = Y.shape
+        mask = range(m)
+        dZ= cache["A"]
+        dZ[Y.astype(int),mask]-=1
+        dZ/=m
         return dZ
 
     def initialize_2layer_weights(self,n_in, n_h, n_fin):

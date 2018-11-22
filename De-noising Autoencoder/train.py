@@ -27,11 +27,6 @@ def train(X, X_val, net_dims, epochs=2000, learningRate=0.1,costEstimate="MSE", 
         for jj in range(noBatches):
 
             XTrBatch= data.getTrMiniBatch()
-            # for i in range(10):
-            #     pixels = XTrBatch[:,i]
-            #     pixels = pixels.reshape((28, 28))
-            #     plt.imshow(pixels, cmap='gray')
-            #     plt.show()
 
             noisyXTrBatch = noise.GaussianNoise(XTrBatch, sd=0.3)
             #print(noisyXTrBatch.shape)
@@ -86,14 +81,6 @@ def predict(parameters):
 
     A1,cache1= model.layer_forward(noisyXTsBatch, W1, b1, "relu")
     A2,cache2 = model.layer_forward(A1, W2, b2, "sigmoid")
-    # for i in range(10):
-    #     pixels1 = A2[:,i]
-    #     pixels1 = pixels1.reshape((28, 28))
-    #     #plt.imshow(pixels1, cmap='gray')
-    #     pixels2 = XTsBatch[:,i]
-    #     pixels2 = pixels2.reshape((28, 28))
-    #     plt.imshow(pixels1,pixels2, cmap='gray')
-    #     plt.show()
 
     fig1=plt.figure(figsize=(8, 8))
     columns = 4
