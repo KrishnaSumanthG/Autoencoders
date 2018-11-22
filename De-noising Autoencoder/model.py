@@ -238,15 +238,10 @@ class Model():
             dZ = self.relu_der(dA, act_cache)
         dA_prev, dW, db = self.linear_backward(dZ, lin_cache, W, b)
         return dA_prev, dW, db
-
-    # def accuracy(predicted_labels, actual_labels):
-    #     diff = predicted_labels - actual_labels
-    #     return (1.0 - (float(np.count_nonzero(diff)) / len(diff.T)))*100
-
     
 class Noise():
     def SaltAndPepper(self, image, rate=0.3):
-        row,col,ch = image.shape
+        row,col = image.shape
         s_vs_p = 0.5
         amount = 0.004
         out = np.copy(image)
@@ -261,10 +256,14 @@ class Noise():
         return out
         
     def GaussianNoise(self, X, sd=0.5):
-        # Injecting small gaussian noise
-        X += np.random.normal(0, sd, X.shape)
-        return X
-        
+	    mean = 0
+	    var = sd
+	    sigma = var**0.5
+	    gauss = np.random.normal(mean,sigma,(X.shape))
+	    gauss = gauss.reshape(X.shape)
+	    noisy = X + gauss
+	    return noisy
+	        
     def MaskingNoise(self, X, rate=0.5):
         mask = (np.random.uniform(0,1, X.shape)<rate).astype("i4")
         X = mask*X

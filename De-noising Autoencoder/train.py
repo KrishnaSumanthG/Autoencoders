@@ -74,7 +74,6 @@ def predict(parameters):
     noise = Noise()
     XTsBatch= data.getTsMiniBatch()
     noisyXTsBatch = noise.GaussianNoise(XTsBatch, sd=0.3)
-    #print(noisyXTrBatch.shape)
 
     W1,b1 = parameters["W1"],parameters["b1"]
     W2,b2 = parameters["W2"],parameters["b2"]
@@ -120,7 +119,6 @@ def main(args):
     n_h = 1000
     net_dims = [n_in, n_h, n_fin]
 
-    args.learningRate = args.learningRate
     epochs = int(args.epochs)
     plot_costs=[]
     plot_costs_=[]
@@ -129,9 +127,7 @@ def main(args):
 
     costs,costs_, parameters = train(train_data, val_data, net_dims, \
         epochs=epochs, learningRate=args.learningRate, decayRate = args.decayRate)
-    plot_costs.append(costs)
-    plot_costs_.append(costs_)
-    
+        
     predict(parameters)
     
     it =  list(range(0,epochs))
