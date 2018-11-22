@@ -110,14 +110,74 @@ def predict(parameters):
 
 
 def autoencoder(parameters, inputdata):
-    data=myDataset(args)
     model=Model()
     W1,b1 = parameters["W1"],parameters["b1"]
     A1,cache1= model.layer_forward(inputdata.T, W1, b1, "relu")
     return A1
 
-def 
+def softmaxTr(net_dims, X, X_val, Y, Yval):
+    learningRate=float(args.learningRate)
+    epochs=int(args.epochs)
+    decayRate = float(args.decayRate)
+    batchSize=int(args.batchSize)
+    model=Model()
+    A0=X
+    A0_=X_val
+    costs = []
+    costs_ = []
+    n_in, n_h, n_fin = net_dims
+    parameters = model.initialize_2layer_weights(n_in, n_h, n_fin)
+    W1,b1 = parameters["W1"],parameters["b1"]
+    for ii in range(epochs):
+        noBatches = int(X.shape[0]/batchSize)
+        learningRate = learningRate*(1/(1+decayRate*ii))
+        print(learningRate)
+        print("Epoch: ",ii )
+        for jj in range(noBatches):
+            W1,b1 = parameters["W1"],parameters["b1"]
+            AL,cache1=model.layer_forward(A0, W1, b1, "linear")
+            A,cache2,cost = model.softmax_cross_entropy_loss(AL, Y)
+            dZ = model.softmax_cross_entropy_loss_der(Y, cache2)
+            dA_prev, dW1, db1 = model.layer_backward(dZ, cache2, W1, b1, "linear")
+            parameters['W1']+=-learningRate*dW1
+            parameters['b1']+=-learningRate*db1
 
+            if jj % 50 == 0:
+                print("Cost at iteration %i is: %f" %(jj*50, cost))
+
+        costs.append(cost)
+        AL_,cache1_=model.layer_forward(A0_, W1, b1, "linear")
+        A_,cache2_,cost_ = model.softmax_cross_entropy_loss(AL_, Yval)
+        costs_.append(cost_)
+
+    return costs,costs_, parameters
+
+def multi_layer_network(X, Y,X_val, Y_val, net_dims, num_iterations=100, learning_rate=0.2, decay_rate=0.01):
+
+    parameters = initialize_multilayer_weights(net_dims)
+    A0 = X
+    A0_ = X_val
+    costs = []
+    costs_ = []
+    for ii in range(num_iterations):
+
+        AL,cache1 = multi_layer_forward(A0, parameters)
+        A,cache2,cost = softmax_cross_entropy_loss(AL, Y)
+
+        # Backward Prop
+        dZ = softmax_cross_entropy_loss_der(Y, cache2)
+        grads = multi_layer_backward(dZ, cache1, parameters)
+        parameters, alpha = update_parameters(parameters, grads, num_iterations, learning_rate, decay_rate=0.0)
+        
+        if ii % 10 == 0:
+            costs.append(cost)
+            AL_,cache1_ = multi_layer_forward(A0_, parameters)
+            A_,cache2_,cost_ = softmax_cross_entropy_loss(AL_, Y_val)
+            costs_.append(cost_)
+        if ii % 10 == 0:
+            print("Cost at iteration %i is: %.05f, learning rate: %.05f" %(ii, cost, alpha))
+    
+    return costs,costs_, parameters
 
 def main(args):
     data = myDataset(args)
@@ -125,15 +185,14 @@ def main(args):
 
     m,n_in = train_data.shape
     n_fin = n_in
-    n_h = 500
-    net_dims = [n_in, n_h, n_fin]
+    n_h1 = 500
+    net_dims = [n_in, n_h1, n_fin]
 
     args.learningRate = args.learningRate
     epochs = int(args.epochs)
     plot_costs=[]
     plot_costs_=[]
     test_acc=[]
-    net_dims = [n_in, n_h, n_fin]
 
     costs,costs_, parameters = train(train_data, val_data, net_dims, \
         epochs=epochs, learningRate=args.learningRate, decayRate = args.decayRate)
@@ -152,15 +211,14 @@ def main(args):
     inputnextTr1=autoencoder(parameters,train_data)
     inputnextVal1=autoencoder(parameters,val_data)
 
-    m,n_in = inputnext.shape
+    m,n_in = inputnextTr1.shape
     n_fin = n_in
-    n_h = 100
-    net_dims = [n_in, n_h, n_fin]
+    n_h2 = 100
+    net_dims = [n_in, n_h2, n_fin]
 
     plot_costs=[]
     plot_costs_=[]
     test_acc=[]
-    net_dims = [n_in, n_h, n_fin]
 
     costs,costs_, parameters = train(inputnextTr1, inputnextVal1, net_dims, \
         epochs=epochs, learningRate=args.learningRate, decayRate = args.decayRate)
@@ -178,9 +236,30 @@ def main(args):
 
     inputnextTr2=autoencoder(parameters,inputnextTr1)
     inputnextVal2=autoencoder(parameters,inputnextVal1)
+    ##net_dims == ??
+    costs,costs_, parameters = softmaxTr(net_dims,inputnextTr2,inputnextVal2, train_labels, val_labels)
 
+    net_dims = [784,n_h1,n_h2,10]
+    print("Network dimensions are:" + str(net_dims))
 
+    train_data, val_data, test_data = data.getTrData(), data.getValData(), data.getTsData()
 
+    costs, costs_,parameters = model.multi_layer_network(train_data, train_label,val_data, val_label, net_dims, \
+            num_iterations=num_iterations, learning_rate=learningRate)
+
+    # compute the accuracy for training set and testing set
+    train_Pred = model.classify(train_data, parameters)
+    test_Pred = model.classify(test_data, parameters)
+
+    trAcc = model.accuracy(train_Pred, train_label)
+    teAcc = model.accuracy(test_Pred, test_label)
+    plot_acc.append(teAcc)
+    print("Accuracy for training set is {0:0.3f} %".format(trAcc))
+    print("Validation cost is{0:0.3f} %".format(costs_[-1]))
+    print("Accuracy for testing set is {0:0.3f} %".format(teAcc))
+
+    ## change multi_layer_neural net
+    ## check dims
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
