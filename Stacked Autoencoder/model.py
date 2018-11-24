@@ -139,6 +139,13 @@ class Model():
         dA_prev, dW, db = linear_backward(dZ, lin_cache, W, b)
         return dA_prev, dW, db
 
+    def classify(self, X, parameters):
+    
+        ALast, cache = self.multi_layer_forward(X, parameters)
+        Ypred = np.argmax(ALast, axis=0)
+
+    return Ypred
+
 class Noise():
     def SaltAndPepper(self, image, rate=0.3):
         row,col,ch = image.shape

@@ -92,28 +92,32 @@ class myDataset():
 
 
 	def getTrData(self):
-		return self.trX
+		return self.trX, self.trY
 
 	def getValData(self):
-		return self.valX
+		return self.valX, self.valY
 
 	def getTsData(self):
-		return self.tsX
+		return self.tsX, self.tsY
 
-	def getTrMiniBatch(self):
-		idx = list(range(self.trX.shape[0]))
-		minibatch = idx[:self.batchSize]
-		return trX[minibatch, :], trY[minibatch, :]
+	def getTrMiniBatch(self, X, Y):
+		idx = list(range(X.shape[0]))
+		np.random.shuffle(idx)
+		minibatch = np.array(idx[:self.batchSize])
+		#print(minibatch)
+		return X[minibatch, :].T, Y[minibatch].reshape((1,-1))
 
-	def getValMiniBatch(self):
-		idx = list(range(self.valX.shape[0]))
+	def getValMiniBatch(self, X, Y):
+		idx = list(range(X.shape[0]))
+		np.random.shuffle(idx)
 		minibatch = idx[:self.batchSize]
-		return valX[minibatch, :], valY[minibatch, :]
+		return X[minibatch, :].T, Y[minibatch].reshape((1,-1))
 
-	def getTsMiniBatch(self):
-		idx = list(range(self.tsX.shape[0]))
+	def getTsMiniBatch(self, X, Y):
+		idx = list(range(X.shape[0]))
+		np.random.shuffle(idx)
 		minibatch = idx[:self.batchSize]
-		return tsX[minibatch, :], tsY[minibatch, :]
+		return X[minibatch, :].T, Y[minibatch].reshape((1,-1))
 
 
 

@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import pdb
 import argparse
 
-def train(X, X_val, net_dims, epochs=2000, learningRate=0.1,costEstimate="MSE", decayRate = 0.5):
+def train(X, Y, X_val, Y_val, net_dims, epochs=2000, learningRate=0.1,costEstimate="MSE", decayRate = 0.5):
     learningRate=float(args.learningRate)
     epochs=int(args.epochs)
     decayRate = float(args.decayRate)
@@ -26,7 +26,7 @@ def train(X, X_val, net_dims, epochs=2000, learningRate=0.1,costEstimate="MSE", 
         print("Epoch: ",ii )
         for jj in range(noBatches):
 
-            XTrBatch= data.getTrMiniBatch()
+            XTrBatch, YTrBatch= data.getTrMiniBatch(X, Y)
             noisyXTrBatch = noise.GaussianNoise(XTrBatch, sd=0.3)
             
             W1,b1 = parameters["W1"],parameters["b1"]
@@ -53,7 +53,7 @@ def train(X, X_val, net_dims, epochs=2000, learningRate=0.1,costEstimate="MSE", 
             if jj % 50 == 0:
                 print("Cost at iteration %i is: %f" %(jj*50, cost))
         
-        XValBatch = data.getValMiniBatch()
+        XValBatch, YValBatch = data.getValMiniBatch(X_val, Y_val)
         noisyXValBatch = noise.GaussianNoise(XValBatch, sd=0.3)
         costs.append(cost)
         A1_,cache1_= model.layer_forward(noisyXValBatch, W1, b1, "relu")
@@ -66,47 +66,49 @@ def train(X, X_val, net_dims, epochs=2000, learningRate=0.1,costEstimate="MSE", 
 
     return costs,costs_, parameters
 
-def predict(parameters):
-    data=myDataset(args)
-    model=Model()
-    noise = Noise()
-    XTsBatch= data.getTsMiniBatch()
-    noisyXTsBatch = noise.GaussianNoise(XTsBatch, sd=0.3)
-    #print(noisyXTrBatch.shape)
+## Uncomment for visualization
 
-    W1,b1 = parameters["W1"],parameters["b1"]
-    W2,b2 = parameters["W2"],parameters["b2"]
+# def predict(parameters):
+#     data=myDataset(args)
+#     model=Model()
+#     noise = Noise()
+#     XTsBatch, YTsBatch= data.getTsMiniBatch()
+#     noisyXTsBatch = noise.GaussianNoise(XTsBatch, sd=0.3)
+#     #print(noisyXTrBatch.shape)
 
-    A1,cache1= model.layer_forward(noisyXTsBatch, W1, b1, "relu")
-    A2,cache2 = model.layer_forward(A1, W2, b2, "sigmoid")
+#     W1,b1 = parameters["W1"],parameters["b1"]
+#     W2,b2 = parameters["W2"],parameters["b2"]
 
-    fig1=plt.figure(figsize=(8, 8))
-    columns = 4
-    rows = 4
-    for i in range(1, columns*rows +1):
-        pixels1 = A2[:,i]
-        img = pixels1.reshape((28, 28))
-        fig1.add_subplot(rows, columns, i)
-        plt.imshow(img)
+#     A1,cache1= model.layer_forward(noisyXTsBatch, W1, b1, "relu")
+#     A2,cache2 = model.layer_forward(A1, W2, b2, "sigmoid")
+
+#     fig1=plt.figure(figsize=(8, 8))
+#     columns = 4
+#     rows = 4
+#     for i in range(1, columns*rows +1):
+#         pixels1 = A2[:,i]
+#         img = pixels1.reshape((28, 28))
+#         fig1.add_subplot(rows, columns, i)
+#         plt.imshow(img)
     
-    fig2=plt.figure(figsize=(8, 8))
-    columns = 4
-    rows = 4
-    for i in range(1, columns*rows +1):
-        pixels2 = XTsBatch[:,i]
-        img = pixels2.reshape((28, 28))
-        fig2.add_subplot(rows, columns, i)
-        plt.imshow(img)
+#     fig2=plt.figure(figsize=(8, 8))
+#     columns = 4
+#     rows = 4
+#     for i in range(1, columns*rows +1):
+#         pixels2 = XTsBatch[:,i]
+#         img = pixels2.reshape((28, 28))
+#         fig2.add_subplot(rows, columns, i)
+#         plt.imshow(img)
 
-    fig3=plt.figure(figsize=(8, 8))
-    columns = 4
-    rows = 4
-    for i in range(1, columns*rows +1):
-        pixels3 = noisyXTsBatch[:,i]
-        img = pixels3.reshape((28, 28))
-        fig3.add_subplot(rows, columns, i)
-        plt.imshow(img)
-    plt.show()
+#     fig3=plt.figure(figsize=(8, 8))
+#     columns = 4
+#     rows = 4
+#     for i in range(1, columns*rows +1):
+#         pixels3 = noisyXTsBatch[:,i]
+#         img = pixels3.reshape((28, 28))
+#         fig3.add_subplot(rows, columns, i)
+#         plt.imshow(img)
+#     plt.show()
 
 
 def autoencoder(parameters, inputdata):
@@ -131,16 +133,16 @@ def softmaxTr(net_dims, X, X_val, Y, Yval):
     for ii in range(epochs):
         noBatches = int(X.shape[0]/batchSize)
         learningRate = learningRate*(1/(1+decayRate*ii))
-        print(learningRate)
-        print("Epoch: ",ii )
+        # print(learningRate)
+        # print("Epoch: ",ii )
         for jj in range(noBatches):
             W1,b1 = parameters["W1"],parameters["b1"]
             AL,cache1=model.layer_forward(A0, W1, b1, "linear")
             A,cache2,cost = model.softmax_cross_entropy_loss(AL, Y)
             dZ = model.softmax_cross_entropy_loss_der(Y, cache2)
             dA_prev, dW1, db1 = model.layer_backward(dZ, cache2, W1, b1, "linear")
-            parameters['W1']+=-learningRate*dW1
-            parameters['b1']+=-learningRate*db1
+            parameters['W1']+= -learningRate*dW1
+            parameters['b1']+= -learningRate*db1
 
             if jj % 50 == 0:
                 print("Cost at iteration %i is: %f" %(jj*50, cost))
@@ -152,50 +154,57 @@ def softmaxTr(net_dims, X, X_val, Y, Yval):
 
     return costs,costs_, parameters
 
-def multi_layer_network(X, Y,X_val, Y_val, net_dims, num_iterations=100, learning_rate=0.2, decay_rate=0.01):
+def classifierTrain(X, Y, X_val, Y_val, net_dims, epochs=epochs, learningRate=learningRate, decayRate=decayRate):
 
-    parameters = initialize_multilayer_weights(net_dims)
-    A0 = X
-    A0_ = X_val
-    costs = []
-    costs_ = []
-    for ii in range(num_iterations):
+	model=Model()
+	data = myDataset(args)
+	parameters = model.initialize_multilayer_weights(net_dims)
+	costs = []
+	costs_ = []
+	for ii in range(epochs):
+		noBatches = int(X.shape[0]/batchSize)
+        learningRate = learningRate*(1/(1+decayRate*ii))
+        for jj in range(noBatches):
+        	XTrBatch, YTrBatch= data.getTrMiniBatch(X, Y)
+       		A0 = XTrBatch
+	        AL,cache1 = model.multi_layer_forward(A0, parameters)
+	        A,cache2,cost = model.softmax_cross_entropy_loss(AL, YTrBatch)
 
-        AL,cache1 = multi_layer_forward(A0, parameters)
-        A,cache2,cost = softmax_cross_entropy_loss(AL, Y)
+	        # Backward Prop
+	        dZ = model.softmax_cross_entropy_loss_der(Y, cache2)
+	        grads = model.multi_layer_backward(dZ, cache1, parameters)
+	        parameters, alpha = model.update_parameters(parameters, grads, epochs, learningRate, decayRate)
+	    	
+	    	if jj % 50 == 0:
+            print("Cost at iteration %i is: %.05f, learning rate: %.05f" %(jj, cost, alpha))
 
-        # Backward Prop
-        dZ = softmax_cross_entropy_loss_der(Y, cache2)
-        grads = multi_layer_backward(dZ, cache1, parameters)
-        parameters, alpha = update_parameters(parameters, grads, num_iterations, learning_rate, decay_rate=0.0)
+        XValBatch, YValBatch = data.getValMiniBatch(X_val, Y_val)
+        costs.append(cost)
+        AL_,cache1_ = model.multi_layer_forward(XValBatch, parameters)
+        A_,cache2_,cost_ = model.softmax_cross_entropy_loss(AL_, YValBatch)
+        costs_.append(cost_)
         
-        if ii % 10 == 0:
-            costs.append(cost)
-            AL_,cache1_ = multi_layer_forward(A0_, parameters)
-            A_,cache2_,cost_ = softmax_cross_entropy_loss(AL_, Y_val)
-            costs_.append(cost_)
-        if ii % 10 == 0:
-            print("Cost at iteration %i is: %.05f, learning rate: %.05f" %(ii, cost, alpha))
-    
     return costs,costs_, parameters
 
 def main(args):
     data = myDataset(args)
-    train_data, val_data, test_data = data.getTrData(), data.getValData(), data.getTsData()
+    train_data, train_label, val_data, val_label, test_data, test_label = data.getTrData(), data.getValData(), data.getTsData()
 
+    initialM, initial_in = train_data.shape
     m,n_in = train_data.shape
     n_fin = n_in
-    n_h1 = 500
+    n_h1 = int(args.n_h1)
     net_dims = [n_in, n_h1, n_fin]
 
-    args.learningRate = args.learningRate
+    learningRate = float(args.learningRate)
+    decayRate = float(args.decayRate)
     epochs = int(args.epochs)
     plot_costs=[]
     plot_costs_=[]
     test_acc=[]
 
-    costs,costs_, parameters = train(train_data, val_data, net_dims, \
-        epochs=epochs, learningRate=args.learningRate, decayRate = args.decayRate)
+    costs,costs_, parameters = train(train_data, train_label, val_data, val_label, net_dims, \
+        epochs=epochs, learningRate=learningRate, decayRate = decayRate)
     plot_costs.append(costs)
     plot_costs_.append(costs_)
     
@@ -213,15 +222,15 @@ def main(args):
 
     m,n_in = inputnextTr1.shape
     n_fin = n_in
-    n_h2 = 100
+    n_h2 = int(args.n_h2)
     net_dims = [n_in, n_h2, n_fin]
 
     plot_costs=[]
     plot_costs_=[]
     test_acc=[]
 
-    costs,costs_, parameters = train(inputnextTr1, inputnextVal1, net_dims, \
-        epochs=epochs, learningRate=args.learningRate, decayRate = args.decayRate)
+    costs,costs_, parameters = train(inputnextTr1, train_label, val_data, val_label, net_dims, \
+        epochs=epochs, learningRate=learningRate, decayRate = decayRate)
     plot_costs.append(costs)
     plot_costs_.append(costs_)
     
@@ -236,23 +245,22 @@ def main(args):
 
     inputnextTr2=autoencoder(parameters,inputnextTr1)
     inputnextVal2=autoencoder(parameters,inputnextVal1)
-    ##net_dims == ??
+    n_last = len(args.labelRange)
+    net_dims = [n_h2, n_last, n_last]
     costs,costs_, parameters = softmaxTr(net_dims,inputnextTr2,inputnextVal2, train_labels, val_labels)
 
-    net_dims = [784,n_h1,n_h2,10]
+    net_dims = [initial_in,n_h1,n_h2,n_last]
     print("Network dimensions are:" + str(net_dims))
 
-    train_data, val_data, test_data = data.getTrData(), data.getValData(), data.getTsData()
-
-    costs, costs_,parameters = model.multi_layer_network(train_data, train_label,val_data, val_label, net_dims, \
-            num_iterations=num_iterations, learning_rate=learningRate)
+    costs, costs_,parameters = classifierTrain(train_data, train_label,val_data, val_label, net_dims, \
+            num_iterations=epochs, learning_rate=args.learningRate)
 
     # compute the accuracy for training set and testing set
     train_Pred = model.classify(train_data, parameters)
     test_Pred = model.classify(test_data, parameters)
 
-    trAcc = model.accuracy(train_Pred, train_label)
-    teAcc = model.accuracy(test_Pred, test_label)
+    trAcc = ((np.sum(train_Pred == train_label)) % train_Pred.shape[0])*100.0
+    teAcc = ((np.sum(test_Pred == test_label)) % test_Pred.shape[0])*100.0
     plot_acc.append(teAcc)
     print("Accuracy for training set is {0:0.3f} %".format(trAcc))
     print("Validation cost is{0:0.3f} %".format(costs_[-1]))
@@ -289,15 +297,11 @@ if __name__ == "__main__":
                         help="Loss function")
     parser.add_argument('--decayRate', default='0.5',
                         help="decay rate for learning rate")
+    parser.add_argument('--n_h1', default='500',
+                        help="number of neurons in hidden layer 1")
+    parser.add_argument('--n_h2', default='150',
+                        help="number of neurons in hidden layer 2")
 
     args = parser.parse_args()
-
-    # args.id += '--batchSize' + str(args.batchSize)
-    # args.id += '--learningRate' + str(args.learningRate)
-    # args.id += '--noTraining' + str(args.noTraining)
-    # args.id += '--noTesting' + str(args.noTesting)
-    # args.id += '--cost' + str(args.cost)
-    # args.id += '--dataPath' + str(args.dataPath)
-    # args.id += '--noValidation' + str(args.noValidation)
     
     main(args)
