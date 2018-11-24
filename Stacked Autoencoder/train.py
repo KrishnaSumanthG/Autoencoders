@@ -118,7 +118,7 @@ def autoencoder(parameters, inputdata):
     A1,cache1= model.layer_forward(inputdata.T, W1, b1, "relu")
     return A1.T
 
-def softmaxTr(net_dims, X, X_val, Y, Yval):
+def softmaxTr(net_dims, X, Xval, Y, Yval):
     data=myDataset(args)
     learningRate=float(args.learningRate)
     epochs=int(args.epochs)
@@ -133,15 +133,15 @@ def softmaxTr(net_dims, X, X_val, Y, Yval):
     for ii in range(epochs):
         noBatches = int(X.shape[0]/batchSize)
         learningRate = learningRate*(1/(1+decayRate*ii))
-        # print(learningRate)
-        # print("Epoch: ",ii )
+        print(learningRate)
+        print("Epoch: ",ii )
         for jj in range(noBatches):
             XTrBatch, YTrBatch= data.getTrMiniBatch(X, Y)
             W1,b1 = parameters["W1"],parameters["b1"]
             AL,cache1=model.layer_forward(XTrBatch, W1, b1, "linear")
             A,cache2,cost = model.softmax_cross_entropy_loss(AL, YTrBatch)
             dZ = model.softmax_cross_entropy_loss_der(YTrBatch, cache2)
-            dA_prev, dW1, db1 = model.layer_backward(dZ, cache2, W1, b1, "linear")
+            dA_prev, dW1, db1 = model.layer_backward(dZ, cache1, W1, b1, "linear")
             parameters['W1']+= -learningRate*dW1
             parameters['b1']+= -learningRate*db1
 
@@ -149,7 +149,7 @@ def softmaxTr(net_dims, X, X_val, Y, Yval):
                 print("Cost at iteration %i is: %f" %(jj*50, cost))
 
         costs.append(cost)
-        XValBatch, YValBatch = data.getValMiniBatch(X_val, Y_val)
+        XValBatch, YValBatch = data.getValMiniBatch(Xval, Yval)
         AL_,cache1_=model.layer_forward(XValBatch, W1, b1, "linear")
         A_,cache2_,cost_ = model.softmax_cross_entropy_loss(AL_, YValBatch)
         costs_.append(cost_)
@@ -157,8 +157,12 @@ def softmaxTr(net_dims, X, X_val, Y, Yval):
     return costs,costs_, parameters
 
 def classifierTrain(X, Y, X_val, Y_val, net_dims, epochs=100, learningRate=0.1, decayRate=0.5):
+    learningRate=float(args.learningRate)
+    epochs=int(args.epochs)
+    decayRate = float(args.decayRate)
+    batchSize=int(args.batchSize)
+    data=myDataset(args)
     model=Model()
-    data = myDataset(args)
     parameters = model.initialize_multilayer_weights(net_dims)
     costs = []
     costs_ = []
@@ -257,7 +261,7 @@ def main(args):
     print("Network dimensions are:" + str(net_dims))
 
     costs, costs_,parameters = classifierTrain(train_data, train_label,val_data, val_label, net_dims, \
-            num_iterations=epochs, learning_rate=args.learningRate)
+            epochs=epochs, learningRate=learningRate,decayRate = decayRate)
 
     # compute the accuracy for training set and testing set
     train_Pred = model.classify(train_data, parameters)
