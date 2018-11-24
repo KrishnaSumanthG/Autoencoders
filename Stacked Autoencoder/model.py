@@ -163,3 +163,26 @@ class Noise():
         mask = (numpy.random.uniform(0,1, X.shape)<rate).astype("i4")
         X = mask*X
         return X
+
+class Optimizers():
+    def __init__(self, args):
+        self.learningRate = args.learningRate
+        self.beta1 = args.beta1
+        self.beta2 = args.beta2
+        self.epsilon = args.epsilon
+    def adam(self, x, dx, config = None):
+        if config == None:
+            config = {}
+        config['m'] = np.zeros_like(x)
+        config['v'] = np.zeros_like(x)
+        config['t'] = 0 
+  
+        next_x = x
+        config["t"] += 1.0
+        config["m"] = (self.beta1 * config["m"]) + ((1 - self.beta1) * dx)
+        config["v"] = (self.beta2 * config["v"]) + ((1 - self.beta2)*(dx**2))
+        mt = config["m"] / (1 - self.beta1**config["t"])
+        vt = config["v"] / (1 - self.beta2**config["t"])
+        next_x -= self.learningRate * mt / (np.sqrt(vt) + self.epsilon)        
+   
+    return next_x, config
