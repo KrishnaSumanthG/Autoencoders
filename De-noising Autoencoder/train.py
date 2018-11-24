@@ -126,7 +126,7 @@ def main(args):
     net_dims = [n_in, n_h, n_fin]
 
     costs,costs_, parameters = train(train_data, val_data, net_dims, \
-        epochs=epochs, learningRate=args.learningRate, decayRate = args.decayRate)
+        epochs=epochs, learningRate=args.learningRate, costEstimate=args.costEstimate, decayRate = args.decayRate)
         
     predict(parameters)
     

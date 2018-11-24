@@ -66,9 +66,18 @@ class Model():
         
 
         Z = cache["Z"]
-        A_, cache_= sigmoid(Z)
+        A_, cache_= self.sigmoid(Z)
         dZ= dA * A_ *(1-A_)
 
+        return dZ
+
+    def linear(self,Z):
+        A = Z
+        cache = {}
+        return A, cache
+
+    def linear_der(self, dA, cache):
+        dZ = np.array(dA, copy=True)
         return dZ
 
     def relu(self,Z):
@@ -90,17 +99,33 @@ class Model():
         return Z, cache
 
     def layer_forward(self,A_prev, W, b, activation):
-        Z, lin_cache = linear_forward(A_prev, W, b)
+        Z, lin_cache = self.linear_forward(A_prev, W, b)
         if activation == "sigmoid":
-            A, act_cache = sigmoid(Z)
+            A, act_cache = self.sigmoid(Z)
         elif activation == "tanh":
-            A, act_cache = tanh(Z)
+            A, act_cache = self.tanh(Z)
+        elif activation == "relu":
+            A, act_cache = self.relu(Z)
+        elif activation == "linear":
+            A, act_cache = self.linear(Z)
         
         cache = {}
         cache["lin_cache"] = lin_cache
         cache["act_cache"] = act_cache
 
         return A, cache
+
+    def multi_layer_forward(self, X, parameters):
+        L = len(parameters)//2
+        A = X
+        caches = []
+        for l in range(1,L):  # since there is no W0 and b0
+            A, cache = self.layer_forward(A, parameters["W"+str(l)], parameters["b"+str(l)], "relu")
+            caches.append(cache)
+
+        AL, cache = self.layer_forward(A, parameters["W"+str(L)], parameters["b"+str(L)], "linear")
+        caches.append(cache)
+        return AL, caches
 
     def crossEntropy(self,A2,X):
 
@@ -133,18 +158,44 @@ class Model():
         act_cache = cache["act_cache"]
 
         if activation == "sigmoid":
-            dZ = sigmoid_der(dA, act_cache)
+            dZ = self.sigmoid_der(dA, act_cache)
         elif activation == "tanh":
-            dZ = tanh_der(dA, act_cache)
-        dA_prev, dW, db = linear_backward(dZ, lin_cache, W, b)
+            dZ = self.tanh_der(dA, act_cache)
+        elif activation == "relu":
+            dZ = self.relu_der(dA, act_cache)
+        elif activation == "linear":
+            dZ = self.linear_der(dA, act_cache)
+        dA_prev, dW, db = self.linear_backward(dZ, lin_cache, W, b)
         return dA_prev, dW, db
+
+    def multi_layer_backward(dAL, caches, parameters):
+        L = len(caches)  # with one hidden layer, L = 2
+        gradients = {}
+        dA = dAL
+        activation = "linear"
+        for l in reversed(range(1,L+1)):
+            dA, gradients["dW"+str(l)], gradients["db"+str(l)] = \
+                        layer_backward(dA, caches[l-1], \
+                        parameters["W"+str(l)],parameters["b"+str(l)],\
+                        activation)
+            activation = "relu"
+        return gradients
 
     def classify(self, X, parameters):
     
         ALast, cache = self.multi_layer_forward(X, parameters)
         Ypred = np.argmax(ALast, axis=0)
 
-    return Ypred
+        return Ypred
+
+    def update_parameters(self,parameters, gradients, epoch, learning_rate, decay_rate=0.0):
+        alpha = learning_rate*(1/(1+decay_rate*epoch))
+        L = len(parameters)//2
+        ### CODE HERE
+        for l in range(L-1):
+            parameters["W"+str(l+1)]+=-alpha*gradients["dW"+str(l+1)]
+            parameters["b"+str(l+1)]+=-alpha*gradients["db"+str(l+1)]
+        return parameters, alpha
 
 class Noise():
     def SaltAndPepper(self, image, rate=0.3):
@@ -163,11 +214,11 @@ class Noise():
         return out
         
     def GaussianNoise(self, X, sd=0.5):
-        X += numpy.random.normal(0, sd, X.shape)
+        X += np.random.normal(0, sd, X.shape)
         return X
         
     def MaskingNoise(self, X, rate=0.5):
-        mask = (numpy.random.uniform(0,1, X.shape)<rate).astype("i4")
+        mask = (np.random.uniform(0,1, X.shape)<rate).astype("i4")
         X = mask*X
         return X
 
@@ -192,4 +243,4 @@ class Optimizers():
         vt = config["v"] / (1 - self.beta2**config["t"])
         next_x -= self.learningRate * mt / (np.sqrt(vt) + self.epsilon)        
    
-    return next_x, config
+        return next_x, config

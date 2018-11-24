@@ -85,9 +85,9 @@ class myDataset():
 		self.tsX = self.tsX[test_idx,:]
 		self.tsY = self.tsY[test_idx]
 
-		self.trY = self.trY.reshape(1, -1)
-		self.valY = self.valY.reshape(1, -1)
-		self.tsY = self.tsY.reshape(1, -1)
+		self.trY = self.trY.reshape(-1, 1)
+		self.valY = self.valY.reshape(-1, 1)
+		self.tsY = self.tsY.reshape(-1, 1)
 
 
 
@@ -105,19 +105,19 @@ class myDataset():
 		np.random.shuffle(idx)
 		minibatch = np.array(idx[:self.batchSize])
 		#print(minibatch)
-		return X[minibatch, :].T, Y[minibatch].reshape((1,-1))
+		return X[minibatch, :].T, Y[minibatch].T
 
 	def getValMiniBatch(self, X, Y):
 		idx = list(range(X.shape[0]))
 		np.random.shuffle(idx)
 		minibatch = idx[:self.batchSize]
-		return X[minibatch, :].T, Y[minibatch].reshape((1,-1))
+		return X[minibatch, :].T, Y[minibatch].T
 
 	def getTsMiniBatch(self, X, Y):
 		idx = list(range(X.shape[0]))
 		np.random.shuffle(idx)
 		minibatch = idx[:self.batchSize]
-		return X[minibatch, :].T, Y[minibatch].reshape((1,-1))
+		return X[minibatch, :].T, Y[minibatch].T
 
 
 
