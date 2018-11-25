@@ -7,8 +7,9 @@ class Model():
 
     def softmax_cross_entropy_loss(self, Z, Y=np.array([])):
         cache={}
-        #print(Y.shape) 
+        #print(Y.shape) 1*m 
         n,m = Y.shape
+        #print(Y)
         mask = range(m)
         A = np.exp(Z-np.max(Z))/(np.sum(np.exp(Z-np.max(Z)),axis=0)).reshape(1,m)  ## total is n,m
         cache["A"]=A

@@ -137,6 +137,7 @@ def softmaxTr(net_dims, X, Xval, Y, Yval,l):
     n_in, n_h, n_fin = net_dims
     parameters = model.initialize_2layer_weights(n_in, n_h, n_fin)
     A0=X
+    #print(X.shape,"shape of X") nxm
     #W1,b1 = parameters["W1"],parameters["b1"]
     for ii in range(epochs):
         noBatches = int(X.shape[0]/batchSize)
@@ -225,7 +226,7 @@ def getTrDataFinetune(inputnextTr3,train_label,digit_range,n_h3,noLabels):
     return trX1.T,trY1.reshape(1, -1)
 
 def getValDataFinetune(inputnextVal3,val_label,noLabels):
-    idx = list(range(noLabels*4))
+    idx = list(range(inputnextVal3.shape[0]))
     np.random.shuffle(idx)
     minibatch = np.array(idx[: (noLabels*4)])
     return inputnextVal3[minibatch, :].T, val_label[minibatch].T
