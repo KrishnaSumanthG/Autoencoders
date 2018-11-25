@@ -38,7 +38,8 @@ class Model():
         numLayers = len(net_dims)
         parameters = {}
         for l in range(numLayers-1):
-            parameters["W"+str(l+1)] = np.random.randn(net_dims[l], net_dims[l+1])*(np.sqrt(2.0/(net_dims[l] * net_dims[l+1]))) #
+            parameters["W"+str(l+1)] = (np.random.randn(net_dims[l], net_dims[l+1])*(np.sqrt(2.0/(net_dims[l] * net_dims[l+1])))).T
+            #print(parameters["W"+str(l+1)].shape)
             parameters["b"+str(l+1)] = np.zeros(net_dims[l+1]).reshape((net_dims[l+1],1))
         return parameters
 
@@ -168,14 +169,14 @@ class Model():
         dA_prev, dW, db = self.linear_backward(dZ, lin_cache, W, b)
         return dA_prev, dW, db
 
-    def multi_layer_backward(dAL, caches, parameters):
+    def multi_layer_backward(self,dAL, caches, parameters):
         L = len(caches)  # with one hidden layer, L = 2
         gradients = {}
         dA = dAL
         activation = "linear"
         for l in reversed(range(1,L+1)):
             dA, gradients["dW"+str(l)], gradients["db"+str(l)] = \
-                        layer_backward(dA, caches[l-1], \
+                        self.layer_backward(dA, caches[l-1], \
                         parameters["W"+str(l)],parameters["b"+str(l)],\
                         activation)
             activation = "relu"
@@ -183,7 +184,7 @@ class Model():
 
     def classify(self, X, parameters):
     
-        ALast, cache = self.multi_layer_forward(X, parameters)
+        ALast, cache = self.multi_layer_forward(X.T, parameters)
         Ypred = np.argmax(ALast, axis=0)
 
         return Ypred

@@ -166,13 +166,14 @@ def classifierTrain(X, Y, X_val, Y_val, net_dims, epochs=100, learningRate=0.1, 
     parameters = model.initialize_multilayer_weights(net_dims)
     costs = []
     costs_ = []
+    # print(X.shape)
+    # print(X_val.shape)
     for ii in range(epochs):
         noBatches = int(X.shape[0]/batchSize)
-        learningRate = learningRate*(1/(1+decayRate*ii))
+        #learningRate = learningRate*(1/(1+decayRate*ii))
         for jj in range(noBatches):
             XTrBatch, YTrBatch= data.getTrMiniBatch(X, Y)
-            A0 = XTrBatch
-            AL,cache1 = model.multi_layer_forward(A0, parameters)
+            AL,cache1 = model.multi_layer_forward(XTrBatch, parameters)
             A,cache2,cost = model.softmax_cross_entropy_loss(AL, YTrBatch)
 
             # Backward Prop
@@ -192,6 +193,7 @@ def classifierTrain(X, Y, X_val, Y_val, net_dims, epochs=100, learningRate=0.1, 
 
 def main(args):
     data = myDataset(args)
+    model=Model()
     train_data, train_label = data.getTrData() 
     val_data, val_label = data.getValData()
     test_data, test_label = data.getTsData()
@@ -269,7 +271,7 @@ def main(args):
 
     trAcc = ((np.sum(train_Pred == train_label)) % train_Pred.shape[0])*100.0
     teAcc = ((np.sum(test_Pred == test_label)) % test_Pred.shape[0])*100.0
-    plot_acc.append(teAcc)
+    #plot_acc.append(teAcc)
     print("Accuracy for training set is {0:0.3f} %".format(trAcc))
     print("Validation cost is{0:0.3f} %".format(costs_[-1]))
     print("Accuracy for testing set is {0:0.3f} %".format(teAcc))
@@ -303,7 +305,7 @@ if __name__ == "__main__":
                         help="number of epochs")
     parser.add_argument('--costEstimate', default='MSE',
                         help="Loss function")
-    parser.add_argument('--decayRate', default='0.5',
+    parser.add_argument('--decayRate', default='0.0',
                         help="decay rate for learning rate")
     parser.add_argument('--n_h1', default='500',
                         help="number of neurons in hidden layer 1")
