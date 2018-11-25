@@ -6,7 +6,8 @@ import pdb
 class Model():
 
     def softmax_cross_entropy_loss(self, Z, Y=np.array([])):
-        cache={} 
+        cache={}
+        #print(Y.shape) 
         n,m = Y.shape
         mask = range(m)
         A = np.exp(Z-np.max(Z))/(np.sum(np.exp(Z-np.max(Z)),axis=0)).reshape(1,m)  ## total is n,m
@@ -190,13 +191,17 @@ class Model():
         return Ypred
 
     def update_parameters(self,parameters, gradients, epoch, learning_rate, decay_rate=0.0):
-        alpha = learning_rate*(1/(1+decay_rate*epoch))
+        #alpha = learning_rate*(1/(1+decay_rate*epoch))
         L = len(parameters)//2
         ### CODE HERE
         for l in range(L-1):
-            parameters["W"+str(l+1)]+=-alpha*gradients["dW"+str(l+1)]
-            parameters["b"+str(l+1)]+=-alpha*gradients["db"+str(l+1)]
-        return parameters, alpha
+            parameters["W"+str(l+1)]+=-learning_rate*gradients["dW"+str(l+1)]
+            parameters["b"+str(l+1)]+=-learning_rate*gradients["db"+str(l+1)]
+        return parameters, learning_rate
+
+    def accuracy(self,predicted_labels, actual_labels):
+        diff = predicted_labels - actual_labels
+        return (1.0 - (float(np.count_nonzero(diff)) / len(diff)))*100
 
 class Noise():
     def SaltAndPepper(self, image, rate=0.3):

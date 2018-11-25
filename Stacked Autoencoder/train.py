@@ -46,6 +46,7 @@ def train(X, Y, X_val, Y_val, net_dims, epochs=2000, learningRate=0.1,costEstima
 
             dA_prev2, dW2, db2 = model.layer_backward(dA, cache2, W2, b2, "sigmoid")
             dA_prev1, dW1, db1 = model.layer_backward(dA_prev2, cache1, W1, b1, "relu")
+            
 
             parameters['W2']+=-learningRate*dW2
             parameters['b2']+=-learningRate*db2
@@ -111,6 +112,11 @@ def train(X, Y, X_val, Y_val, net_dims, epochs=2000, learningRate=0.1,costEstima
 #         plt.imshow(img)
 #     plt.show()
 
+def autoParas(autoParameters,parameters,l):
+    W,b = parameters["W1"],parameters["b1"]
+    autoParameters["W"+str(l)] = W
+    autoParameters["b"+str(l)] = b
+    return autoParameters
 
 def autoencoder(parameters, inputdata):
     model=Model()
@@ -118,30 +124,33 @@ def autoencoder(parameters, inputdata):
     A1,cache1= model.layer_forward(inputdata.T, W1, b1, "relu")
     return A1.T
 
-def softmaxTr(net_dims, X, Xval, Y, Yval):
+def softmaxTr(net_dims, X, Xval, Y, Yval,l):
     data=myDataset(args)
     learningRate=float(args.learningRate)
     epochs=int(args.epochs)
     decayRate = float(args.decayRate)
-    batchSize=int(args.batchSize)
+    #batchSize=int(args.batchSize)
+    batchSize=l*10
     model=Model()
     costs = []
     costs_ = []
     n_in, n_h, n_fin = net_dims
     parameters = model.initialize_2layer_weights(n_in, n_h, n_fin)
-    W1,b1 = parameters["W1"],parameters["b1"]
+    A0=X
+    #W1,b1 = parameters["W1"],parameters["b1"]
     for ii in range(epochs):
         noBatches = int(X.shape[0]/batchSize)
         learningRate = learningRate*(1/(1+decayRate*ii))
         print(learningRate)
         print("Epoch: ",ii )
         for jj in range(noBatches):
-            XTrBatch, YTrBatch= data.getTrMiniBatch(X, Y)
+            #XTrBatch, YTrBatch= data.getTrMiniBatch(X, Y)
             W1,b1 = parameters["W1"],parameters["b1"]
-            AL,cache1=model.layer_forward(XTrBatch, W1, b1, "linear")
-            A,cache2,cost = model.softmax_cross_entropy_loss(AL, YTrBatch)
-            dZ = model.softmax_cross_entropy_loss_der(YTrBatch, cache2)
+            AL,cache1=model.layer_forward(A0, W1, b1, "linear")
+            A,cache2,cost = model.softmax_cross_entropy_loss(AL, Y)
+            dZ = model.softmax_cross_entropy_loss_der(Y, cache2)
             dA_prev, dW1, db1 = model.layer_backward(dZ, cache1, W1, b1, "linear")
+            
             parameters['W1']+= -learningRate*dW1
             parameters['b1']+= -learningRate*db1
 
@@ -149,9 +158,9 @@ def softmaxTr(net_dims, X, Xval, Y, Yval):
                 print("Cost at iteration %i is: %f" %(jj*50, cost))
 
         costs.append(cost)
-        XValBatch, YValBatch = data.getValMiniBatch(Xval, Yval)
-        AL_,cache1_=model.layer_forward(XValBatch, W1, b1, "linear")
-        A_,cache2_,cost_ = model.softmax_cross_entropy_loss(AL_, YValBatch)
+        #XValBatch, YValBatch = data.getValMiniBatch(Xval, Yval)
+        AL_,cache1_=model.layer_forward(Xval, W1, b1, "linear")
+        A_,cache2_,cost_ = model.softmax_cross_entropy_loss(AL_, Yval)
         costs_.append(cost_)
 
     return costs,costs_, parameters
@@ -170,7 +179,7 @@ def classifierTrain(X, Y, X_val, Y_val, net_dims, epochs=100, learningRate=0.1, 
     # print(X_val.shape)
     for ii in range(epochs):
         noBatches = int(X.shape[0]/batchSize)
-        #learningRate = learningRate*(1/(1+decayRate*ii))
+        learningRate = learningRate*(1/(1+decayRate*ii))
         for jj in range(noBatches):
             XTrBatch, YTrBatch= data.getTrMiniBatch(X, Y)
             AL,cache1 = model.multi_layer_forward(XTrBatch, parameters)
@@ -191,9 +200,44 @@ def classifierTrain(X, Y, X_val, Y_val, net_dims, epochs=100, learningRate=0.1, 
         costs_.append(cost_)    
     return costs,costs_, parameters
 
+def plot(costs,costs_):
+    epochs = int(args.epochs)
+    it =  list(range(0,epochs))
+    plt.plot(it, costs, label='train')
+    plt.plot(it, costs_, label='val')
+    plt.title('Train_cost and Val_cost vs iterations')
+    plt.xlabel('iterations')
+    plt.ylabel('Cost')
+    plt.legend()
+    plt.show()
+
+def getTrDataFinetune(inputnextTr3,train_label,digit_range,n_h3,noLabels):
+    trX1 = np.zeros((noLabels*10, n_h3))
+    trY1 = np.zeros(noLabels*10).reshape(-1,1)
+    count=0
+    for ll in digit_range:
+        idl = np.where(train_label == ll)
+        idl1 = idl[0][: (noLabels)]
+        idx1 = list(range(count*noLabels, (count+1)*noLabels))
+        trX1[idx1, :] = inputnextTr3[idl1, :]
+        trY1[idx1] = train_label[idl1]
+        count+=1
+    return trX1.T,trY1.reshape(1, -1)
+
+def getValDataFinetune(inputnextVal3,val_label,noLabels):
+    idx = list(range(noLabels*4))
+    np.random.shuffle(idx)
+    minibatch = np.array(idx[: (noLabels*4)])
+    return inputnextVal3[minibatch, :].T, val_label[minibatch].T
+
 def main(args):
     data = myDataset(args)
     model=Model()
+    learningRate = float(args.learningRate)
+    decayRate = float(args.decayRate)
+    epochs = int(args.epochs)
+    costEstimate = args.costEstimate
+
     train_data, train_label = data.getTrData() 
     val_data, val_label = data.getValData()
     test_data, test_label = data.getTsData()
@@ -203,81 +247,121 @@ def main(args):
     n_fin = n_in
     n_h1 = int(args.n_h1)
     net_dims = [n_in, n_h1, n_fin]
+    autoParameters = {}
 
-    learningRate = float(args.learningRate)
-    decayRate = float(args.decayRate)
-    epochs = int(args.epochs)
-    costEstimate = args.costEstimate
-
-    plot_costs=[]
-    plot_costs_=[]
-    test_acc=[]
+    print("     Training of Autoencoder Layer1      ")
 
     costs,costs_, parameters = train(train_data, train_label, val_data, val_label, net_dims, \
         epochs=epochs, learningRate=learningRate, costEstimate=costEstimate, decayRate = decayRate)
-    plot_costs.append(costs)
-    plot_costs_.append(costs_)
-    
-    it =  list(range(0,epochs))
-    plt.plot(it, costs, label='train')
-    plt.plot(it, costs_, label='val')
-    plt.title('Train_cost and Val_cost vs iterations')
-    plt.xlabel('iterations')
-    plt.ylabel('Cost')
-    plt.legend()
-    plt.show()
+
+    plot(costs,costs_)
+
+    autoParameters=autoParas(autoParameters,parameters,1)
 
     inputnextTr1=autoencoder(parameters,train_data)
     inputnextVal1=autoencoder(parameters,val_data)
+    inputnextTs1=autoencoder(parameters,test_data)
 
     m,n_in = inputnextTr1.shape
     n_fin = n_in
     n_h2 = int(args.n_h2)
     net_dims = [n_in, n_h2, n_fin]
 
-    plot_costs=[]
-    plot_costs_=[]
-    test_acc=[]
-
+    print("     Training of Autoencoder Layer2      ")
     costs,costs_, parameters = train(inputnextTr1, train_label, inputnextVal1, val_label, net_dims, \
-        epochs=epochs, learningRate=learningRate, decayRate = decayRate)
-    plot_costs.append(costs)
-    plot_costs_.append(costs_)
+        epochs=epochs, learningRate=learningRate, costEstimate=costEstimate, decayRate = decayRate)
     
-    it =  list(range(0,epochs))
-    plt.plot(it, costs, label='train')
-    plt.plot(it, costs_, label='val')
-    plt.title('Train_cost and Val_cost vs iterations')
-    plt.xlabel('iterations')
-    plt.ylabel('Cost')
-    plt.legend()
-    plt.show()
+    plot(costs,costs_)
+
+    autoParameters=autoParas(autoParameters,parameters,2)
 
     inputnextTr2=autoencoder(parameters,inputnextTr1)
     inputnextVal2=autoencoder(parameters,inputnextVal1)
+    inputnextTs2=autoencoder(parameters,inputnextTs1)
+
+    m,n_in = inputnextTr2.shape
+    n_fin = n_in
+    n_h3 = int(args.n_h3)
+    net_dims = [n_in, n_h3, n_fin]
+
+    print("     Training of Autoencoder Layer3      ")
+    costs,costs_, parameters = train(inputnextTr2, train_label, inputnextVal2, val_label, net_dims, \
+        epochs=epochs, learningRate=learningRate, costEstimate=costEstimate,decayRate = decayRate)
+
+    plot(costs,costs_)
+
+    autoParameters=autoParas(autoParameters,parameters,3)
+
+    inputnextTr3=autoencoder(parameters,inputnextTr2)
+    inputnextVal3=autoencoder(parameters,inputnextVal2)
+    inputnextTs3=autoencoder(parameters,inputnextTs2)
+
+    print("     Training of Autoencoder Final Layer with 1labled sample per class     ")
     n_last = len(args.labelRange)
-    net_dims = [n_h2, n_last, n_last]
-    costs,costs_, parameters = softmaxTr(net_dims,inputnextTr2,inputnextVal2, train_label, val_label)
+    net_dims = [n_h3, n_last, n_last]
 
-    net_dims = [initial_in,n_h1,n_h2,n_last]
-    print("Network dimensions are:" + str(net_dims))
+    noLabels=1
+    trX,trY = getTrDataFinetune(inputnextTr3,train_label,args.labelRange,n_h3,noLabels)
+    valX,valY = getValDataFinetune(inputnextVal3,val_label,noLabels)
 
-    costs, costs_,parameters = classifierTrain(train_data, train_label,val_data, val_label, net_dims, \
-            epochs=epochs, learningRate=learningRate,decayRate = decayRate)
+    costs,costs_, parameters = softmaxTr(net_dims,trX,valX, trY, valY,noLabels)
+    print("     Classification using features extracted from autoencoder and fine tuning with 1labled sample per class     ")
+    
+    autoParameters = autoParas(autoParameters,parameters,4)
 
     # compute the accuracy for training set and testing set
-    train_Pred = model.classify(train_data, parameters)
-    test_Pred = model.classify(test_data, parameters)
+    train_autoPred = model.classify(train_data, autoParameters)
+    test_autoPred = model.classify(test_data, autoParameters)
 
-    trAcc = ((np.sum(train_Pred == train_label)) % train_Pred.shape[0])*100.0
-    teAcc = ((np.sum(test_Pred == test_label)) % test_Pred.shape[0])*100.0
-    #plot_acc.append(teAcc)
+    trAcc = model.accuracy(train_autoPred.reshape(-1,1), train_label)
+    teAcc = model.accuracy(test_autoPred.reshape(-1,1), test_label)
+
     print("Accuracy for training set is {0:0.3f} %".format(trAcc))
     print("Validation cost is{0:0.3f} %".format(costs_[-1]))
     print("Accuracy for testing set is {0:0.3f} %".format(teAcc))
 
-    ## change multi_layer_neural net
-    ## check dims
+    print("     Training of Autoencoder Final Layer with 5labled samples per class     ")
+    n_last = len(args.labelRange)
+    net_dims = [n_h3, n_last, n_last]
+
+    noLabels=5
+    trX,trY = getTrDataFinetune(inputnextTr3,train_label,args.labelRange,n_h3,noLabels)
+    valX,valY = getValDataFinetune(inputnextVal3,val_label,noLabels)
+
+    costs,costs_, parameters = softmaxTr(net_dims,trX,valX, trY, valY,noLabels)
+    print("     Classification using features extracted from autoencoder and fine tuning with 5labled samples per class      ")
+    
+    autoParameters = autoParas(autoParameters,parameters,4)
+    # compute the accuracy for training set and testing set
+    train_autoPred = model.classify(train_data, autoParameters)
+    test_autoPred = model.classify(test_data, autoParameters)
+
+    trAcc = model.accuracy(train_autoPred.reshape(-1,1), train_label)
+    teAcc = model.accuracy(test_autoPred.reshape(-1,1), test_label)
+
+    print("Accuracy for training set is {0:0.3f} %".format(trAcc))
+    print("Validation cost is{0:0.3f} %".format(costs_[-1]))
+    print("Accuracy for testing set is {0:0.3f} %".format(teAcc))
+
+    
+    # print("     Training of deep neural network      ")
+    # net_dims = [initial_in,n_h1,n_h2,n_last]
+    # print("Network dimensions are:" + str(net_dims))
+
+    # costs, costs_,parameters = classifierTrain(train_data, train_label,val_data, val_label, net_dims, \
+    #         epochs=epochs, learningRate=learningRate,decayRate = decayRate)
+
+    # print("     General Classification using deep neural network      ")
+    # # compute the accuracy for training set and testing set
+    # train_Pred = model.classify(train_data, parameters)
+    # test_Pred = model.classify(test_data, parameters)
+
+    # trAcc = ((np.sum(train_Pred == train_label)) % train_Pred.shape[0])*100.0
+    # teAcc = ((np.sum(test_Pred == test_label)) % test_Pred.shape[0])*100.0
+    # #plot_acc.append(teAcc)
+    # print("Accuracy for training set is {0:0.3f} %".format(trAcc))
+    # print("Validation cost is{0:0.3f} %".format(costs_[-1]))
+    # print("Accuracy for testing set is {0:0.3f} %".format(teAcc))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -309,8 +393,10 @@ if __name__ == "__main__":
                         help="decay rate for learning rate")
     parser.add_argument('--n_h1', default='500',
                         help="number of neurons in hidden layer 1")
-    parser.add_argument('--n_h2', default='150',
+    parser.add_argument('--n_h2', default='300',
                         help="number of neurons in hidden layer 2")
+    parser.add_argument('--n_h3', default='100',
+                        help="number of neurons in hidden layer 3")
 
     args = parser.parse_args()
     
