@@ -181,10 +181,11 @@ class Model():
 
     def MSE(self,A2,X):
 
-        obs = X.shape[1]
+        # obs = X.shape[1]
 
-        cost= (1/2)*(A2-X)*(A2-X)
-        cost= cost.sum()/obs
+        # cost= (1/2)*(A2-X)*(A2-X)
+        # cost= cost.sum()/obs
+        cost= np.mean((X - A2)**2)
 
         return cost
 

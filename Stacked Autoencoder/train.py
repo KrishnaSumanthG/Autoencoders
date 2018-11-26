@@ -42,7 +42,7 @@ def train(X, Y, X_val, Y_val, net_dims, epochs=2000, learningRate=0.1,costEstima
                 dA= (A2-XTrBatch)/(XTrBatch.shape[1])
             else:
                 cost = model.crossEntropy(A2, XTrBatch)
-                dA= ((A2 - X)/ (A2*(1.0 - A2)))/XTrBatch.shape[1]
+                dA= ((A2 - XTrBatch)/ (A2*(1.0 - A2)))/XTrBatch.shape[1]
 
             dA_prev2, dW2, db2 = model.layer_backward(dA, cache2, W2, b2, "sigmoid")
             dA_prev1, dW1, db1 = model.layer_backward(dA_prev2, cache1, W1, b1, "relu")

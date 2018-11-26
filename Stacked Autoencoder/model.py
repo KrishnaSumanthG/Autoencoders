@@ -132,7 +132,7 @@ class Model():
 
     def crossEntropy(self,A2,X):
 
-        obs = X.shape[0]
+        obs = X.shape[1]
         pred = A2
 
         cost= -X*np.log(pred) - (1-X)*np.log(1-pred)
@@ -141,11 +141,10 @@ class Model():
         return cost
 
     def MSE(self,A2,X):
-
-        obs = X.shape[0]
-
-        cost= (1/2)*(A2-X)*(A2-X)
-        cost= cost.sum()/obs
+        # obs = X.shape[1]
+        # cost= (A2-X)*(A2-X)
+        # cost= cost.sum()/obs
+        cost= np.mean((X - A2)**2)
 
         return cost
 
