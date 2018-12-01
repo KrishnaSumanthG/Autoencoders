@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import pdb
 import argparse
 
-def train(X, X_val, net_dims, epochs=2000, learningRate=0.1,costEstimate="MSE", decayRate = 0.5):
+def train(X, X_val, net_dims, noise_level, epochs=2000, learningRate=0.1,costEstimate="MSE", decayRate = 0.5):
     learningRate=float(args.learningRate)
     epochs=int(args.epochs)
     decayRate = float(args.decayRate)
@@ -18,7 +18,7 @@ def train(X, X_val, net_dims, epochs=2000, learningRate=0.1,costEstimate="MSE", 
 
     costs = []
     costs_ = []
-    
+
     for ii in range(epochs):
         noBatches = int(X.shape[0]/batchSize)
         learningRate = learningRate*(1/(1+decayRate*ii))
@@ -27,9 +27,10 @@ def train(X, X_val, net_dims, epochs=2000, learningRate=0.1,costEstimate="MSE", 
         for jj in range(noBatches):
 
             XTrBatch= data.getTrMiniBatch()
+            
 
-            noisyXTrBatch = noise.GaussianNoise(XTrBatch, sd=0.3)
-            #print(noisyXTrBatch.shape)
+            ## change this noise level to a constant when experimenting with a different parameter
+            noisyXTrBatch = noise.GaussianNoise(XTrBatch, sd=noise_level)
             
             W1,b1 = parameters["W1"],parameters["b1"]
             W2,b2 = parameters["W2"],parameters["b2"]
@@ -40,6 +41,7 @@ def train(X, X_val, net_dims, epochs=2000, learningRate=0.1,costEstimate="MSE", 
             if costEstimate == "MSE":
                 cost = model.MSE(A2, XTrBatch)
                 dA= (A2-XTrBatch)/(XTrBatch.shape[1])
+                # dA = np.mean(2* (A2-XTrBatch))
             else:
                 cost = model.crossEntropy(A2, XTrBatch)
                 dA= ((A2 - X)/ (A2*(1.0 - A2)))/XTrBatch.shape[1]
@@ -125,17 +127,37 @@ def main(args):
     test_acc=[]
     net_dims = [n_in, n_h, n_fin]
 
-    costs,costs_, parameters = train(train_data, val_data, net_dims, \
-        epochs=epochs, learningRate=args.learningRate, costEstimate=args.costEstimate, decayRate = args.decayRate)
+    ## Following list store the train, val costs and parameters
+
+    trainingCost_list = []
+    validationCost_list = []
+    parametersDict_list = []
+    xAxis = list(range(epochs))
+
+    ## This noise_level parameter can be changed to any other parameter and can conduct experiments
+    ## Change the for loop to a list of other variables
+    ## Ex: for noise_name in ['gaussian', 's&p', 'masking']
+
+    for noise_level in np.arange(0.1, 1, 0.1):
+        costs,costs_, parameters = train(train_data, val_data, net_dims, noise_level,\
+            epochs=epochs, learningRate=args.learningRate, costEstimate=args.costEstimate, decayRate = args.decayRate)
+        trainingCost_list.append(costs)
+        validationCost_list.append(costs_)
+        parametersDict_list.append(parameters)
         
-    predict(parameters)
+    # predict(parameters)
     
-    it =  list(range(0,epochs))
-    plt.plot(it, costs, label='train')
-    plt.plot(it, costs_, label='val')
-    plt.title('Train_cost and Val_cost vs iterations')
-    plt.xlabel('iterations')
-    plt.ylabel('Cost')
+
+    ## The plots of training curve vs parameter
+
+    for i in xAxis:
+        it =  list(range(0,epochs))
+        # plt.plot(it, costs, label='train' + str(i))
+        plt.plot(xAxis, trainingCost_list[i], label='train' + str(xAxis[i]))
+        # plt.plot(it, costs_, label='val')
+        plt.title('Train_cost at different noise levels')
+        # plt.xlabel('iterations')
+        # plt.ylabel('Cost')
     plt.legend()
     plt.show()
 
@@ -161,7 +183,7 @@ if __name__ == "__main__":
                         help="number of validation examples per class")
     parser.add_argument('--noTsPerClass', default='1000',
                         help="number of testing example per class")
-    parser.add_argument('--epochs', default=100,
+    parser.add_argument('--epochs', default=10,
                         help="number of epochs")
     parser.add_argument('--costEstimate', default='MSE',
                         help="Loss function")
@@ -181,5 +203,8 @@ if __name__ == "__main__":
     main(args)
 
 
+## Run first comment to test code is exectued without errors
+## python train.py --noTraining 60 --noValidation 10 --noTesting 10 --learningRate 0.5 --decayRate 0.1 --noTrPerClass 6 --noValPerClass 1 --noTsPerClass 1 --batchSize 16 --epochs 9
 
-
+## After above run the the below line with required parameters 
+## python train.py --learningRate 0.5 --decayRate 0.5 --batchSize 128
