@@ -5,8 +5,9 @@ import matplotlib.pyplot as plt
 import pdb
 import argparse
 
-def train(X, X_val, net_dims, noise_level, epochs=2000, learningRate=0.1,costEstimate="MSE", decayRate = 0.5):
-    learningRate=float(args.learningRate)
+def train(X, X_val, net_dims, lr, epochs=2000, learningRate=0.1,costEstimate="MSE", decayRate = 0.5):
+    # learningRate=float(args.learningRate)
+    learningRate = lr
     epochs=int(args.epochs)
     decayRate = float(args.decayRate)
     batchSize=int(args.batchSize)
@@ -30,7 +31,7 @@ def train(X, X_val, net_dims, noise_level, epochs=2000, learningRate=0.1,costEst
             
 
             ## change this noise level to a constant when experimenting with a different parameter
-            noisyXTrBatch = noise.GaussianNoise(XTrBatch, sd=noise_level)
+            noisyXTrBatch = noise.GaussianNoise(XTrBatch, sd=0.2)
             
             W1,b1 = parameters["W1"],parameters["b1"]
             W2,b2 = parameters["W2"],parameters["b2"]
@@ -137,25 +138,29 @@ def main(args):
     ## This noise_level parameter can be changed to any other parameter and can conduct experiments
     ## Change the for loop to a list of other variables
     ## Ex: for noise_name in ['gaussian', 's&p', 'masking']
+    ## tested learning rated [0.5, 0.1, 0.05, 0.005, 0.0005]
 
-    for noise_level in np.arange(0.1, 1, 0.1):
-        costs,costs_, parameters = train(train_data, val_data, net_dims, noise_level,\
+    learning_rates = [0.5, 0.1, 0.05, 0.005, 0.0005]
+
+    for lr in learning_rates:
+        costs,costs_, parameters = train(train_data, val_data, net_dims, lr,\
             epochs=epochs, learningRate=args.learningRate, costEstimate=args.costEstimate, decayRate = args.decayRate)
         trainingCost_list.append(costs)
         validationCost_list.append(costs_)
         parametersDict_list.append(parameters)
         
     # predict(parameters)
-    
 
     ## The plots of training curve vs parameter
 
-    for i in xAxis:
-        it =  list(range(0,epochs))
+    for i in range(len(learning_rates)):
         # plt.plot(it, costs, label='train' + str(i))
         plt.plot(xAxis, trainingCost_list[i], label='train' + str(xAxis[i]))
+        plt.subplot(121)
         # plt.plot(it, costs_, label='val')
-        plt.title('Train_cost at different noise levels')
+        plt.plot(xAxis, validationCost_list[i], label='val' + str(xAxis[i]))
+        plt.subplot(122)
+        plt.title('Train_cost and val_cost at different noise levels')
         # plt.xlabel('iterations')
         # plt.ylabel('Cost')
     plt.legend()
