@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pdb
 
+np.random.seed(1)
 
 class Model():
 
