@@ -140,7 +140,7 @@ def main(args):
     ## Ex: for noise_name in ['gaussian', 's&p', 'masking']
     ## tested learning rated [0.5, 0.1, 0.05, 0.005, 0.0005]
 
-    learning_rates = [0.5, 0.1, 0.05, 0.005, 0.0005]
+    learning_rates = [1, 0.5, 0.1, 0.05, 0.01, 0.005]
 
     for lr in learning_rates:
         costs,costs_, parameters = train(train_data, val_data, net_dims, lr,\
@@ -154,16 +154,21 @@ def main(args):
     ## The plots of training curve vs parameter
 
     for i in range(len(learning_rates)):
-        # plt.plot(it, costs, label='train' + str(i))
-        plt.plot(xAxis, trainingCost_list[i], label='train' + str(xAxis[i]))
-        plt.subplot(121)
+        plt.plot(xAxis, trainingCost_list[i], label=('train' + str(learning_rates[i])))
+        plt.title('Train_cost at different noise levels')
         # plt.plot(it, costs_, label='val')
-        plt.plot(xAxis, validationCost_list[i], label='val' + str(xAxis[i]))
-        plt.subplot(122)
-        plt.title('Train_cost and val_cost at different noise levels')
+        # plt.plot(xAxis, validationCost_list[i], label=('val' + str(learning_rates[i])))
+        # plt.title('Val_cost at different noise levels')
         # plt.xlabel('iterations')
         # plt.ylabel('Cost')
-    plt.legend()
+    plt.legend( loc=1)
+    plt.figure()
+    for i in range(len(learning_rates)):
+        plt.plot(xAxis, validationCost_list[i], label=('val' + str(learning_rates[i])))
+        plt.title('Val_cost at different noise levels')
+        # plt.xlabel('iterations')
+        # plt.ylabel('Cost')
+    plt.legend( loc=1)
     plt.show()
 
 if __name__ == "__main__":
