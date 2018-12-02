@@ -57,10 +57,6 @@ class myDataset():
 			idx1 = list(range(count*(self.noTrPerClass-self.noValPerClass), (count+1)*(self.noTrPerClass-self.noValPerClass)))
 			idx2 = list(range(count*(self.noValPerClass), (count+1)*self.noValPerClass))
 		    
-
-			# print(len(idx1))
-			# print(len(idl1))
-
 			self.trX[idx1, :] = self.trData[idl1, :]
 			self.trY[idx1] = self.trLabels[idl1]
 		    
